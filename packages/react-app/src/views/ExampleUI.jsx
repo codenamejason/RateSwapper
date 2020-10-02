@@ -41,9 +41,7 @@ export default function ExampleUI({address, mainnetProvider, localProvider, setP
         <Divider/>
 
         {  /* use formatEther to display a BigNumber: */ }
-        <h2>Your Balance: {yourLocalBalance?formatEther(yourLocalBalance):"..."}</h2>
-
-        OR
+        <h2>Your Balance: </h2>
 
         <Balance
           address={address}
@@ -91,28 +89,8 @@ export default function ExampleUI({address, mainnetProvider, localProvider, setP
           }}>Send Value</Button>
         </div>
 
-        <div style={{margin:8}}>
-          <Button onClick={()=>{
-            /* look how we call setPurpose AND send some value along */
-            tx( writeContracts.YourContract.setPurpose("💵 Paying for this one!",{
-              value: parseEther("0.001")
-            }))
-            /* this will fail until you make the setPurpose function payable */
-          }}>Set Purpose With Value</Button>
-        </div>
 
 
-        <div style={{margin:8}}>
-          <Button onClick={()=>{
-            /* you can also just craft a transaction and send it to the tx() transactor */
-            tx({
-              to: writeContracts.YourContract.address,
-              value: parseEther("0.001"),
-              data: writeContracts.YourContract.interface.encodeFunctionData("setPurpose(string)",["🤓 Whoa so 1337!"])
-            });
-            /* this should throw an error about "no fallback nor receive function" until you add it */
-          }}>Another Example</Button>
-        </div>
 
       </div>
 

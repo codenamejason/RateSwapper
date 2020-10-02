@@ -9,7 +9,7 @@ import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { useUserAddress } from "eth-hooks";
 import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useEventListener } from "./hooks";
-import { Header, Account, Faucet, Ramp, Contract, GasGauge, Address } from "./components";
+import { Header, Account, Faucet, Ramp, Contract, GasGauge, Address, TokenBalance } from "./components";
 import { Transactor } from "./helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
 //import Hints from "./Hints";
@@ -43,7 +43,7 @@ const mainnetProvider = getDefaultProvider("mainnet", { infura: INFURA_ID, ether
 // 🏠 Your local provider is usually pointed at your local blockchain
 const localProviderUrl = "http://localhost:8545"; // for xdai: https://dai.poa.network
 // as you deploy to other networks you can set REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
-const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
+const localProviderUrlFromEnv =  localProviderUrl; // process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 console.log("🏠 Connecting to provider:", localProviderUrlFromEnv);
 const localProvider = new JsonRpcProvider(localProviderUrlFromEnv);
 
@@ -79,7 +79,7 @@ function App() {
   console.log("📝 readContracts",readContracts)
 
   // keep track of a variable from the contract in the local React state:
-  const purpose = useContractReader(readContracts,"YourContract", "purpose")
+  const purpose = useContractReader(readContracts,"Controller", "purpose")
   console.log("🤗 purpose:",purpose)
 
   // If you want to make 🔐 write transactions to your contracts, use the userProvider:
@@ -87,7 +87,7 @@ function App() {
   console.log("🔐 writeContracts",writeContracts)
 
   //📟 Listen for broadcast events
-  const setPurposeEvents = useEventListener(readContracts, "YourContract", "SetPurpose", localProvider, 1);
+  const setPurposeEvents = useEventListener(readContracts, "Controller", "SetPurpose", localProvider, 1);
   console.log("📟 SetPurpose events:",setPurposeEvents)
 
   const loadWeb3Modal = useCallback(async () => {
@@ -119,7 +119,7 @@ function App() {
 
         <Menu style={{ textAlign:"center" }} selectedKeys={[route]} mode="horizontal">
           <Menu.Item key="/">
-            <Link onClick={()=>{setRoute("/")}} to="/">YourContract</Link>
+            <Link onClick={()=>{setRoute("/")}} to="/">Controller</Link>
           </Menu.Item>
           <Menu.Item key="/hints">
             <Link onClick={()=>{setRoute("/hints")}} to="/hints">Hints</Link>
@@ -138,6 +138,13 @@ function App() {
             */}
             <Contract
               name="YourContract"
+              signer={userProvider.getSigner()}
+              provider={localProvider}
+              address={address}
+              blockExplorer={blockExplorer}
+            />
+            <Contract
+              name="RawCipherToken"
               signer={userProvider.getSigner()}
               provider={localProvider}
               address={address}
@@ -183,6 +190,8 @@ function App() {
            logoutOfWeb3Modal={logoutOfWeb3Modal}
            blockExplorer={blockExplorer}
          />
+         
+         <TokenBalance name={"RawCipherToken"} img={"rRCT"} address={address} contracts={readContracts} />
       </div>
 
       {/* 🗺 Extra UI like gas price, eth price, faucet, and support: */}

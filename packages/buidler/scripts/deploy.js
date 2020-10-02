@@ -7,17 +7,22 @@ async function main() {
   console.log("📡 Deploy \n");
 
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
-  await autoDeploy();
+  //await autoDeploy();
   // OR
   // custom deploy (to use deployed addresses dynamically for example:)
-  // const exampleToken = await deploy("ExampleToken")
+  //const rRCTToken = await deploy("RawCipherPoolToken")
+  //const compound = await deploy("Compound");
+  const yourContract = await deploy("YourContract");
+  const rawCipherToken = await deploy("RawCipherToken", [yourContract.address]);  
+  await yourContract.setTokenAddress(rawCipherToken.address);
+  //await rawCipherToken.mintUserTokens("0xceeaF9BBf52bb33F36F945aC09c38739766D1e48", "" + (10 * 10 ** 18));
+
+  //const stratDaiCompBasic = await deploy("StrategyDAICompoundBasic", [controller.address])
+  //const rVault = await deploy("rVault", [rRCTToken.address, controller.address])
+
   // const examplePriceOracle = await deploy("ExamplePriceOracle")
   // const smartContractWallet = await deploy("SmartContractWallet",[exampleToken.address,examplePriceOracle.address])
 }
-
-
-
-
 
 async function deploy(name, _args) {
   const args = _args || [];
