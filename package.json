@@ -37,5 +37,8 @@
     "packages": [
       "packages/*"
     ]
+  },
+  "dependencies": {
+    "@biconomy/mexa": "^1.5.13"
   }
 }

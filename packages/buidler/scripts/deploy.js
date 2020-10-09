@@ -7,12 +7,20 @@ async function main() {
   console.log("📡 Deploy \n");
 
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
-  await autoDeploy();
+  //await autoDeploy();
   // OR
+  const yourContract = await deploy('YourContract')
+  const rawCipherToken = await deploy('RawCipherToken', [yourContract.address])
+  const rawCipherLPToken = await deploy('RawCipherLPToken', [yourContract.address])
+
+  await yourContract.setTokenAddress(rawCipherToken.address);
+  await yourContract.setLPTokenAddress(rawCipherLPToken.address);
+
+  //await yourContract.mintRCTTokens('0xceeaF9BBf52bb33F36F945aC09c38739766D1e48', 1000 ** 18);
   // custom deploy (to use deployed addresses dynamically for example:)
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")
-  // const smartContractWallet = await deploy("SmartContractWallet",[exampleToken.address,examplePriceOracle.address])
+  // const smartContractWallet = await deploy("SmartContractWallet",[exampleToken.address, examplePriceOracle.address])
 }
 
 
