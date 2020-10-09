@@ -133,6 +133,17 @@ export const client = new ApolloClient({
 //     console.error(err);
 //   });
 
+// this is for mainnet
+const usdcBalance = 0;
+const getUsdcBalance = async () => {
+  usdcBalance = await usdc.methods.balanceOf('0xc783df8a850f42e7F7e57013759C285caa701eB6').call();
+
+  console.log('USDC Balance: ', web3.utils.fromWei(usdcBalance, "Mwei"));
+}
+
+
+
+
 
 function RateSwapUI({address, mainnetProvider, userProvider, localProvider, yourLocalBalance, price, tx, readContracts, writeContracts }) {
 
@@ -170,7 +181,7 @@ function RateSwapUI({address, mainnetProvider, userProvider, localProvider, your
                 <br /><br />
                 <Button
                   onClick={() => {
-
+                    
                   }}>
                   Deposit & Stake
                 </Button>
@@ -212,7 +223,7 @@ function RateSwapUI({address, mainnetProvider, userProvider, localProvider, your
                       onClick={() => {
 
                       }}>
-                      Buy USDC
+                      Buy RCT
                     </Button>
                   </Col>
                   <Col span={8} >
@@ -220,7 +231,7 @@ function RateSwapUI({address, mainnetProvider, userProvider, localProvider, your
                       onClick={() => {
 
                       }}>
-                      Mint rUSD
+                      ToDo
                     </Button>
                   </Col>
                   <Col span={8} >
@@ -228,7 +239,7 @@ function RateSwapUI({address, mainnetProvider, userProvider, localProvider, your
                       onClick={() => {
 
                       }}>
-                      Get USDC/RCT LP tokens
+                      Get ETH/RCT LP tokens
                     </Button>
                   </Col>
                 </Row>
