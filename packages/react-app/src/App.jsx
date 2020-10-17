@@ -16,7 +16,7 @@ import { parseEther, formatEther } from "@ethersproject/units";
 import { Hints, ExampleUI, RateSwapUI, CompoundUI, AaveUI } from "./views"
 import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from './constants'
 import Web3 from 'web3';
-import Biconomy from "@biconomy/mexa";
+// import Biconomy from "@biconomy/mexa";
 
 //import Portis from '@portis/web3';
 // 
@@ -42,20 +42,20 @@ const ropstenProvider = getDefaultProvider('ropsten', { infura: INFURA_ID, ether
 // ( ⚠️ Getting "failed to meet quorum" errors? Check your INFURA_ID)
 
 // 🏠 Your local provider is usually pointed at your local blockchain
-const localProviderUrl = "http://localhost:8545"; // "https://ropsten.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
+const localProviderUrl = "http://localhost:999"; // "https://ropsten.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
 // as you deploy to other networks you can set REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
-const localProviderUrlFromEnv = "http://localhost:8545";// "https://kovan.infura.io/v3/5c19088a9f804202b4fe954c029de555";//process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
+const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 console.log("🏠 Connecting to provider:", localProviderUrlFromEnv);
 const localProvider = new JsonRpcProvider(localProviderUrlFromEnv);
 
 // Biconomy Initialization
-let options = {
-  apiKey: '_a1vIlfCz.49a8bba2-29e8-471e-afea-bcfaf8aeeea5',
-  strictMode: true
-};
+// let options = {
+//   apiKey: '_a1vIlfCz.49a8bba2-29e8-471e-afea-bcfaf8aeeea5',
+//   strictMode: true
+// };
 
-const biconomy = new Biconomy(window.ethereum, options);
-const biconomyWeb3 = new Web3(biconomy);
+// const biconomy = new Biconomy(window.ethereum, options);
+// const biconomyWeb3 = new Web3(biconomy);
 
 // biconomy.onEvent(biconomy.READY, () => {
 //   // Initialize your dapp here
@@ -82,10 +82,6 @@ const biconomyWeb3 = new Web3(biconomy);
 //     console.log('existing user', response.userContract)
 //   }
 // });
-
-
-
-
 
 const App = () => {
   const [injectedProvider, setInjectedProvider] = useState();
@@ -144,7 +140,7 @@ const App = () => {
 
       {/* ✏️ Edit the header and change the title to your project name */}
       <Header />
-
+    
       <BrowserRouter>
 
         <Menu style={{ textAlign:"center" }} selectedKeys={[route]} mode="horizontal">
@@ -157,9 +153,9 @@ const App = () => {
           {/* <Menu.Item key="/exampleui">
             <Link onClick={()=>{setRoute("/exampleui")}} to="/exampleui">ExampleUI</Link>
           </Menu.Item> */}
-          <Menu.Item key='/rateswap'>
+          {/* <Menu.Item key='/rateswap'>
             <Link onClick={ () => { setRoute('/rateswap') } } to='/rateswap'>Rate Swap</Link>
-          </Menu.Item>
+          </Menu.Item> */}
           <Menu.Item>
             <Link onClick={ () => { setRoute('/compound') } } to='/compound'>Compound</Link>
           </Menu.Item>
@@ -290,8 +286,8 @@ const App = () => {
            kovanProvider={kovanProvider}
            ropstenProvider={ropstenProvider}
          />
-         <TokenBalance name={"RawCipherToken"} img={"🛠RCT"} address={address} contracts={readContracts} />
-         <TokenBalance name={"RawCipherLPToken"} img={"🛠RCT LP"} address={address} contracts={readContracts} />
+         {/* <TokenBalance name={"RawCipherToken"} img={"🛠RCT"} address={address} contracts={readContracts} />
+         <TokenBalance name={"RawCipherLPToken"} img={"🛠RCT LP"} address={address} contracts={readContracts} /> */}
       </div>
 
       {/* 🗺 Extra UI like gas price, eth price, faucet, and support: */}
@@ -326,7 +322,7 @@ const App = () => {
              {
 
                /*  if the local provider has a signer, let's show the faucet:  */
-               true || localProvider && localProvider.connection && localProvider.connection.url && localProvider.connection.url.indexOf("localhost")>=0 && !process.env.REACT_APP_PROVIDER && price > 1 ? (
+               localProvider && localProvider.connection && localProvider.connection.url && localProvider.connection.url.indexOf("localhost")>=0 && price > 1 ? (
                  <Faucet localProvider={localProvider} price={price} ensProvider={mainnetProvider}/>
                ) : (
                  ""

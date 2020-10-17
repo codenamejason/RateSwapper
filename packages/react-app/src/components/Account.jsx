@@ -16,7 +16,6 @@ export default function Account({
   logoutOfWeb3Modal,
   blockExplorer,
   kovanProvider,
-  rinkebyProvider,
   ropstenProvider
 }) {
   const modalButtons = [];
@@ -54,7 +53,7 @@ export default function Account({
   ) : (
     <span>
       {address ? <Address value={address} ensProvider={mainnetProvider} blockExplorer={blockExplorer} /> : "Connecting..."}
-      <Balance address={address} provider={rinkebyProvider} dollarMultiplier={price} />
+      <Balance address={address} provider={ropstenProvider} dollarMultiplier={price} />
       <Wallet address={address} provider={userProvider} ensProvider={mainnetProvider} price={price} />
     </span>
   );
