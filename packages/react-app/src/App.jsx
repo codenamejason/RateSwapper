@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Switch, Route, Link } from "react-router-dom";
 //import IpfsRouter from 'ipfs-react-router'
 import "antd/dist/antd.css";
-import { MailOutlined } from "@ant-design/icons";
+import { MailOutlined, UploadOutlined } from "@ant-design/icons";
 import { getDefaultProvider, InfuraProvider, JsonRpcProvider, Web3Provider } from "@ethersproject/providers";
 import "./App.css";
 import { Row, Col, Button, List, Tabs, Menu } from "antd";
@@ -13,24 +13,19 @@ import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useC
 import { TokenBalance, Balance, Header, Account, Faucet, Ramp, Contract, GasGauge, Address } from "./components";
 import { Transactor } from "./helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
-//import Hints from "./Hints";
-import { Hints, ExampleUI, RateSwapUI } from "./views"
+import { Hints, ExampleUI, RateSwapUI, CompoundUI, AaveUI } from "./views"
+import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from './constants'
 import Web3 from 'web3';
-//import Biconomy from "@biconomy/mexa";
-/*
-    Welcome to 🏗 scaffold-eth !
+import Biconomy from "@biconomy/mexa";
 
-    Code:
-    https://github.com/austintgriffith/scaffold-eth
+//import Portis from '@portis/web3';
+// 
+// const portis = new Portis('43b018f6-e3f1-4d5e-a85b-021280e28777', 'mainnet');
+// const web3Portis = new Web3(portis.provider);
+// const portisAccount = web3Portis.eth.getAccounts()
+//   .then((r) => console.log(r));
+// console.log('Portis Account', portisAccount)
 
-    Support:
-    https://t.me/joinchat/KByvmRe5wkR-8F_zz6AjpA
-    or DM @austingriffith on twitter or telegram
-
-    You should get your own Infura.io ID and put it in `constants.js`
-    (this is your connection to the main Ethereum network for ENS etc.)
-*/
-import { INFURA_ID, ETHERSCAN_KEY } from "./constants";
 const { TabPane } = Tabs;
 
 // 🔭 block explorer URL
@@ -40,29 +35,36 @@ const blockExplorer = "https://etherscan.io/" // for xdai: "https://blockscout.c
 console.log("📡 Connecting to Mainnet Ethereum");
 const mainnetProvider = getDefaultProvider("mainnet", { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 });
 const kovanProvider = getDefaultProvider("kovan", { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 });
+const rinkebyProvider = getDefaultProvider('rinkeby', { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 })
+const ropstenProvider = getDefaultProvider('ropsten', { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 })
 // const mainnetProvider = new InfuraProvider("mainnet",INFURA_ID);
 // const mainnetProvider = new JsonRpcProvider("https://mainnet.infura.io/v3/5ce0898319eb4f5c9d4c982c8f78392a")
 // ( ⚠️ Getting "failed to meet quorum" errors? Check your INFURA_ID)
 
 // 🏠 Your local provider is usually pointed at your local blockchain
-const localProviderUrl = "http://localhost:8545"; // "https://kovan.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
+const localProviderUrl = "http://localhost:8545"; // "https://ropsten.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
 // as you deploy to other networks you can set REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
 const localProviderUrlFromEnv = "http://localhost:8545";// "https://kovan.infura.io/v3/5c19088a9f804202b4fe954c029de555";//process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 console.log("🏠 Connecting to provider:", localProviderUrlFromEnv);
 const localProvider = new JsonRpcProvider(localProviderUrlFromEnv);
 
-// let options = {
-//   apiKey: '_a1vIlfCz.49a8bba2-29e8-471e-afea-bcfaf8aeeea5',
-//   strictMode: true
-// };
+// Biconomy Initialization
+let options = {
+  apiKey: '_a1vIlfCz.49a8bba2-29e8-471e-afea-bcfaf8aeeea5',
+  strictMode: true
+};
 
-// const biconomy = new Biconomy(window.ethereum, options);
-// const web3 = new Web3(biconomy);
+const biconomy = new Biconomy(window.ethereum, options);
+const biconomyWeb3 = new Web3(biconomy);
 
 // biconomy.onEvent(biconomy.READY, () => {
 //   // Initialize your dapp here
+//   console.log('**** Dapp initialized on Biconomy ****')
+
+
 //  }).onEvent(biconomy.ERROR, (error, message) => {
 //   // Handle error while initializing mexa
+//   console.error('**** Error ****', error)
 // });
 
 // biconomy.login('0xa0df350d2637096571F7A701CBc1C5fdE30dF76A', (error, response) => {
@@ -79,7 +81,7 @@ const localProvider = new JsonRpcProvider(localProviderUrlFromEnv);
 //   // Existing user login successful
 //     console.log('existing user', response.userContract)
 //   }
-//  });
+// });
 
 
 
@@ -89,22 +91,19 @@ const App = () => {
   const [injectedProvider, setInjectedProvider] = useState();
   /* 💵 this hook will get the price of ETH from 🦄 Uniswap: */
   const price = useExchangePrice(mainnetProvider); //1 for xdai
-
   /* 🔥 this hook will get the price of Gas from ⛽️ EtherGasStation */
   const gasPrice = useGasPrice("fast"); //1000000000 for xdai
-
-  // For more hooks, check out 🔗eth-hooks at: https://www.npmjs.com/package/eth-hooks
- 
+  // For more hooks, check out 🔗eth-hooks at: https://www.npmjs.com/package/eth-hooks 
   // Use your injected provider from 🦊 Metamask or if you don't have it then instantly generate a 🔥 burner wallet.
-  const userProvider = useUserProvider(injectedProvider, localProvider);
+  const userProvider = useUserProvider(injectedProvider, ropstenProvider);
   const address = useUserAddress(userProvider);
-  console.log(address)
+  console.log('User Wallet Address: ', address)
 
   // The transactor wraps transactions and provides notificiations
   const tx = Transactor(userProvider, gasPrice)
 
   // 🏗 scaffold-eth is full of handy hooks like this one to get your balance:
-  const yourLocalBalance = useBalance(localProvider, address);
+  const yourLocalBalance = useBalance(ropstenProvider, address);
   console.log("💵 yourLocalBalance", yourLocalBalance ? formatEther(yourLocalBalance) : "...")
 
   // just plug in different 🛰 providers to get your balance on different chains:
@@ -112,7 +111,7 @@ const App = () => {
   console.log("💵 yourMainnetBalance", yourMainnetBalance ? formatEther(yourMainnetBalance) : "...")
 
   // Load in your local 📝 contract and read a value from it:
-  const readContracts = useContractLoader(localProvider)
+  const readContracts = useContractLoader(ropstenProvider)
   console.log("📝 readContracts", readContracts)
 
   // If you want to make 🔐 write transactions to your contracts, use the userProvider:
@@ -131,12 +130,12 @@ const App = () => {
     }
   }, [loadWeb3Modal]);
 
-  console.log("Location:", window.location.pathname)
+  console.log("Location:: ", window.location.pathname)
 
   const [route, setRoute] = useState();
 
   useEffect(() => {
-    console.log("SETTING ROUTE", window.location.pathname)
+    console.log("SETTING ROUTE:: ", window.location.pathname)
     setRoute(window.location.pathname)
   }, [ window.location.pathname ]);
 
@@ -150,7 +149,7 @@ const App = () => {
 
         <Menu style={{ textAlign:"center" }} selectedKeys={[route]} mode="horizontal">
           <Menu.Item key="/">
-            <Link onClick={()=>{setRoute("/")}} to="/">Contract Playground</Link>
+            <Link onClick={ ()=>{ setRoute("/") } } to="/">Contract Playground</Link>
           </Menu.Item>
           {/* <Menu.Item key="/hints">
             <Link onClick={()=>{setRoute("/hints")}} to="/hints">Hints</Link>
@@ -158,11 +157,14 @@ const App = () => {
           {/* <Menu.Item key="/exampleui">
             <Link onClick={()=>{setRoute("/exampleui")}} to="/exampleui">ExampleUI</Link>
           </Menu.Item> */}
-          <Menu.Item key='/ethonline'>
-            <Link onClick={() => { setRoute('/ethonline')}} to='/ethonline'>EthOnline</Link>
+          <Menu.Item key='/rateswap'>
+            <Link onClick={ () => { setRoute('/rateswap') } } to='/rateswap'>Rate Swap</Link>
+          </Menu.Item>
+          <Menu.Item>
+            <Link onClick={ () => { setRoute('/compound') } } to='/compound'>Compound</Link>
           </Menu.Item>
           <Menu.Item key='/uniswap'>
-            <Link onClick={() => { setRoute('/uniswap')}} to='/uniswap'>Uniswap</Link>
+            <Link onClick={ () => { setRoute('/uniswap') } } to='/uniswap'>Uniswap</Link>
           </Menu.Item>
         </Menu>
 
@@ -176,21 +178,21 @@ const App = () => {
             <Contract
               name="YourContract"
               signer={userProvider.getSigner()}
-              provider={localProvider}
+              provider={ropstenProvider}
               address={address}
               blockExplorer={blockExplorer}
             />
             <Contract
               name="RawCipherToken"
               signer={userProvider.getSigner()}
-              provider={localProvider}
+              provider={ropstenProvider}
               address={address}
               blockExplorer={blockExplorer}
             />
             <Contract
               name="RawCipherLPToken"
               signer={userProvider.getSigner()}
-              provider={localProvider}
+              provider={ropstenProvider}
               address={address}
               blockExplorer={blockExplorer}
             />
@@ -216,7 +218,7 @@ const App = () => {
               readContracts={readContracts}
             />
           </Route> */}
-          <Route path='/ethonline'>
+          <Route path='/rateswap'>
             <RateSwapUI
               address={address}
               userProvider={userProvider}
@@ -228,6 +230,37 @@ const App = () => {
               writeContracts={writeContracts}
               readContracts={readContracts}
               kovanProvider={kovanProvider}
+              ropstenProvider={ropstenProvider}
+            />
+          </Route>
+          <Route path='/compound'>
+            <CompoundUI
+              address={address}
+              userProvider={userProvider}
+              mainnetProvider={mainnetProvider}
+              localProvider={localProvider}
+              yourLocalBalance={yourLocalBalance}
+              price={price}
+              tx={tx}
+              writeContracts={writeContracts}
+              readContracts={readContracts}
+              kovanProvider={kovanProvider}
+              ropstenProvider={ropstenProvider}
+            />
+          </Route>
+          <Route path='/aave'>
+            <AaveUI
+              address={address}
+              userProvider={userProvider}
+              mainnetProvider={mainnetProvider}
+              localProvider={localProvider}
+              yourLocalBalance={yourLocalBalance}
+              price={price}
+              tx={tx}
+              writeContracts={writeContracts}
+              readContracts={readContracts}
+              kovanProvider={kovanProvider}
+              ropstenProvider={ropstenProvider}
             />
           </Route>
           <Route path='/uniswap'>
@@ -254,6 +287,8 @@ const App = () => {
            loadWeb3Modal={loadWeb3Modal}
            logoutOfWeb3Modal={logoutOfWeb3Modal}
            blockExplorer={blockExplorer}
+           kovanProvider={kovanProvider}
+           ropstenProvider={ropstenProvider}
          />
          <TokenBalance name={"RawCipherToken"} img={"🛠RCT"} address={address} contracts={readContracts} />
          <TokenBalance name={"RawCipherLPToken"} img={"🛠RCT LP"} address={address} contracts={readContracts} />

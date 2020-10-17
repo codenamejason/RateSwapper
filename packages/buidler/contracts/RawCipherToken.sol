@@ -17,6 +17,7 @@ contract RawCipherToken is ERC20 {
         owner = _owner; 
         _mint(0xceeaF9BBf52bb33F36F945aC09c38739766D1e48, 1000e18);
         _mint(0xc783df8a850f42e7F7e57013759C285caa701eB6, 1000e18);
+        _mint(0x783ABd013a6D41334BCa711CDE577A5211487883, 1000e18);
     }
 
     function mintTokens(address _user, uint256 _amount)

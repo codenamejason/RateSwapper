@@ -1,7 +1,6 @@
 import { hexlify } from "@ethersproject/bytes";
 import { parseUnits } from "@ethersproject/units";
 import { notification } from "antd";
-
 import Notify from "bnc-notify";
 
 // this should probably just be renamed to "notifier"

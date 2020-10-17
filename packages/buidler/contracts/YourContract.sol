@@ -1,4 +1,5 @@
 pragma solidity >=0.6.0 <0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,13 +9,36 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./RawCipherLPToken.sol";
 import "./RawCipherToken.sol";
 
+interface Erc20 {
+    function balanceOf(address account) external view returns (uint256);
+    function approve(address, uint256) external returns (bool);
+    function transfer(address, uint256) external returns (bool);
+}
+
+interface CErc20 {
+    function balanceOf(address owner) external view returns (uint);
+    function mint(uint256) external returns (uint256);
+    function redeem(uint) external returns (uint);
+    function redeemUnderlying(uint) external returns (uint);
+    function borrowBalanceCurrent(address account) external returns (uint);
+    function borrow(uint borrowAmount) external returns (uint);
+    function repayBorrow(uint repayAmount) external returns (uint);
+}
+
+interface Comptroller {
+    function enterMarkets(address[] calldata)
+        external
+        returns (uint256[] memory);
+
+    function claimComp(address holder) external;
+}
+
 contract YourContract is Ownable {
   using SafeMath for uint256;
-  IERC20 token;
-  
+  IERC20 token;  
   uint256 public poolBalance;
-
   address[] public stakers;
+
   // token > address
   mapping(address => mapping(address => uint256)) public stakingBalance;
   mapping(address => uint256) public uniqueTokensStaked;
@@ -23,10 +47,48 @@ contract YourContract is Ownable {
   mapping(address => uint256) balances;
   mapping(address => uint256) rewardBalance;
 
-  //event SetPurpose(address sender, string purpose);
-  event PoolDeposit(address accountHolder, uint256 amount);
+  // Mainnet Dai
+  // https://etherscan.io/address/0x6b175474e89094c44da98b954eedeac495271d0f#readContract
+  address daiAddress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+  Erc20 dai = Erc20(daiAddress);
 
-  //string public purpose = "🛠 Programming Unstoppable Money";
+  // Mainnet cDai
+  // https://etherscan.io/address/0x5d3a536e4d6dbd6114cc1ead35777bab948e3643#readProxyContract
+  address cDaiAddress = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+  CErc20 cDai = CErc20(cDaiAddress);
+
+  // Mainnet Comptroller
+  // https://etherscan.io/address/0x3d9819210a31b4961b30ef54be2aed79b9c9cd3b#readProxyContract
+  address comptrollerAddress = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
+  Comptroller comptroller = Comptroller(comptrollerAddress);
+
+  // COMP ERC-20 token
+  // https://etherscan.io/token/0xc00e94cb662c3520282e6f5717214004a7f26888
+  Erc20 compToken = Erc20(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+
+  // STRUCTS
+  struct Farmer {
+    address payable addr;
+
+  }
+
+  struct Deposit {
+    address id;
+    string depType;
+    uint256 datetime;
+    uint256 amount;
+    string tokenDeposited;
+  }
+
+
+  // EVENTS
+  event PoolDeposit(address accountHolder, uint256 amount);
+  event BoughtRct(address user, uint256 amount, uint256 datetime);
+  event SoldRct(address user, uint256 amount, uint256 datetime);
+  event DepositEthAndStake(address user, uint256 amount, uint256 datetime, Deposit deposit, Farmer farmer);
+  event DepositDaiAndStake(address user, uint256 amount, uint256 datetime);
+  event DepositLPTokens(address user, uint256 amount, uint256 datetime);
+
 
   RawCipherToken rct;
   RawCipherLPToken rclpt;
@@ -69,11 +131,6 @@ contract YourContract is Ownable {
     return address(this).balance;
   }
 
-  // function setPurpose(string memory newPurpose) public {
-  //   purpose = newPurpose;
-  //   console.log(msg.sender,"set purpose to",purpose);
-  //   emit SetPurpose(msg.sender, purpose);
-  // }
 
   function depositEthAndStake()
     public
@@ -86,6 +143,10 @@ contract YourContract is Ownable {
     balances[msg.sender] = balances[msg.sender] + poolDeposit;
     poolBalance = poolBalance + poolDeposit;
 
+    Deposit memory deposit = Deposit(msg.sender, "Deposit Ether And Stake", msg.value, block.timestamp, "ETH");
+    Farmer memory farmer = Farmer(msg.sender);
+
+    emit DepositEthAndStake(msg.sender, msg.value, block.timestamp, deposit, farmer);
     emit PoolDeposit(msg.sender, poolDeposit);
 
     // now use the other half to buy rct tokens and stake them
