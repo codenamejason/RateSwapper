@@ -5,7 +5,7 @@ import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { SyncOutlined } from '@ant-design/icons';
 import { useUserAddress, useTokenBalance } from "eth-hooks";
-import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useEventListener, useCustomContractLoader, usePoller } from "./../hooks";
+import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useEventListener, useCustomContractLoader, useContract, usePoller } from "./../hooks";
 import { TokenBalance, Balance, Header, Account, Faucet, Ramp, Contract, GasGauge, Address } from "./../components";
 import { Transactor } from "./../helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
@@ -20,7 +20,7 @@ import Biconomy from "@biconomy/mexa";
 const { ChainId, Fetcher, WETH, Route } = require('@uniswap/sdk');
 
 const Web3 = require('web3');
-const web3 = new Web3('https://kovan.infura.io/v3/1ad03ac212da4523b6c8337eace81a14'); // //('http://127.0.0.1:8545');
+const web3 = new Web3('https://ropsten.infura.io/v3/1ad03ac212da4523b6c8337eace81a14'); // //('http://127.0.0.1:8545');
 
 
 const Compound = require('@compound-finance/compound-js');
@@ -168,10 +168,10 @@ const main = async function() {
  *
  */
 const RateSwapUI = ({address, mainnetProvider, userProvider, localProvider, yourLocalBalance, price, tx, readContracts, writeContracts, kovanProvider, ropstenProvider }) => {
-  const cethContract = useCustomContractLoader(ropstenProvider, contractAddress, cethAbiJson);
+  const cethContract = useContract(ropstenProvider, contractAddress, cethAbiJson);
   console.log('cethContract', cethContract)
 
-  const compContract = useCustomContractLoader(ropstenProvider, compTokenAddress, compTokenAbi)
+  const compContract = useContract(ropstenProvider, compTokenAddress, compTokenAbi)
   console.log('comp contract: ', compContract)
 
   //📟 Listen for broadcast events

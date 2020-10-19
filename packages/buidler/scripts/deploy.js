@@ -9,9 +9,10 @@ async function main() {
   // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
   //await autoDeploy();
   // OR
-  const yourContract = await deploy('YourContract')
+  const yourContract = await deploy('YourContract', ['0xa0df350d2637096571F7A701CBc1C5fdE30dF76A'])
   const rawCipherToken = await deploy('RawCipherToken', [yourContract.address])
   const rawCipherLPToken = await deploy('RawCipherLPToken', [yourContract.address])
+
 
   await yourContract.setTokenAddress(rawCipherToken.address);
   await yourContract.setLPTokenAddress(rawCipherLPToken.address);

@@ -33,11 +33,12 @@ interface Comptroller {
     function claimComp(address holder) external;
 }
 
-contract YourContract is Ownable {
+contract YourContract {
   using SafeMath for uint256;
   IERC20 token;  
   uint256 public poolBalance;
   address[] public stakers;
+  address payable public owner;
 
   // token > address
   mapping(address => mapping(address => uint256)) public stakingBalance;
@@ -112,10 +113,10 @@ contract YourContract is Ownable {
       rclpt = RawCipherLPToken(_tokenAddress);
   }
 
-  constructor()
+  constructor(address payable _owner)
     public
   {
-    
+    owner = _owner;// 0xa0df350d2637096571F7A701CBc1C5fdE30dF76A;
   }
 
   function mintRCTTokens(address user, uint256 amount)
