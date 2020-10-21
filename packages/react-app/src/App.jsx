@@ -9,7 +9,7 @@ import { Row, Col, Button, List, Tabs, Menu } from "antd";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { useUserAddress } from "eth-hooks";
-import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useContractExistsAtAddress, useEventListener } from "./hooks";
+import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useContractReader, useBalance, useContractExistsAtAddress, usePoller, useContract, useEventListener } from "./hooks";
 import { TokenBalance, Balance, Header, Account, Faucet, Ramp, Contract, GasGauge, Address } from "./components";
 import { Transactor } from "./helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
@@ -18,6 +18,8 @@ import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from
 import Web3 from 'web3';
 // import Biconomy from "@biconomy/mexa";
 
+
+
 //import Portis from '@portis/web3';
 // 
 // const portis = new Portis('43b018f6-e3f1-4d5e-a85b-021280e28777', 'mainnet');
@@ -25,6 +27,10 @@ import Web3 from 'web3';
 // const portisAccount = web3Portis.eth.getAccounts()
 //   .then((r) => console.log(r));
 // console.log('Portis Account', portisAccount)
+
+// Import the contract abi's
+const abis = require('./contracts/compoundAbis');
+const addresses = require('./constants/addresses');
 
 const { TabPane } = Tabs;
 
@@ -105,6 +111,29 @@ const App = () => {
   // just plug in different 🛰 providers to get your balance on different chains:
   const yourMainnetBalance = useBalance(mainnetProvider, address);
   console.log("💵 yourMainnetBalance", yourMainnetBalance ? formatEther(yourMainnetBalance) : "...")
+  
+  // Mainnet DAI contract to fetch balance
+  const daiContract = useContract(mainnetProvider, addresses.DAI_ADDRESS_MAINNET, abis.DAI_TOKEN_ABI_MAINNET); 
+  console.log('📝 DAI Contract Mainnet: ', daiContract);
+  const [daiBalance, setDaiBalance] = useState(0);
+
+  // Using the Poller hook to update our DAI balance
+  // You can update the polling time by changing the 60000 (60 seconds).
+  // usePoller(async () => {
+  //   if(daiContract && address){
+  //       const daiBal = await daiContract.balanceOf(address)
+  //       setDaiBalance(daiBal);
+  //   }
+  // }, 500000, [daiContract]);
+
+  // (async function() {
+  //   if(daiContract && address){
+  //     const daiBal = await daiContract.balanceOf(address)
+  //     setDaiBalance(daiBal);
+  //   }
+  // })().catch(console.error);
+
+  console.log('💵 Your Mainnet DAI Balance: ', daiBalance ? formatEther(daiBalance) : '...');
 
   // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(ropstenProvider)
@@ -158,6 +187,9 @@ const App = () => {
           </Menu.Item> */}
           <Menu.Item>
             <Link onClick={ () => { setRoute('/compound') } } to='/compound'>Compound</Link>
+          </Menu.Item>
+          <Menu.Item>
+            <Link onClick={ () => { setRoute('/aave') } } to='/aave'>Aave</Link>
           </Menu.Item>
           <Menu.Item key='/uniswap'>
             <Link onClick={ () => { setRoute('/uniswap') } } to='/uniswap'>Uniswap</Link>

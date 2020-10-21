@@ -19,6 +19,7 @@ export default function useContract(provider, address, abi) {
       if (typeof provider !== "undefined" && address) {
         try {
           const customContract = new Contract(address, abi, provider);
+          setContract(customContract)
         } catch (e) {
           console.log("ERROR LOADING CONTRACTS!!", e);
         }

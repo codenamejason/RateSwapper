@@ -9,17 +9,14 @@ import { useExchangePrice, useGasPrice, useUserProvider, useContractLoader, useC
 import { TokenBalance, Balance, Account, Faucet, Ramp, Contract, GasGauge, Address, Header } from "./../components";
 import { Transactor } from "./../helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
-import gql from 'graphql-tag'
-//import { ApolloClient } from 'apollo-client'
-import { InMemoryCache } from 'apollo-cache-inmemory'
-import { HttpLink } from 'apollo-link-http'
-import { useQuery } from '@apollo/react-hooks'
 import { getDefaultProvider, InfuraProvider, JsonRpcProvider, Web3Provider } from "@ethersproject/providers";
 import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from '../constants'
 //import Biconomy from "@biconomy/mexa";
 import { legos } from "@studydefi/money-legos";
 import compoundLogo from '../images/compoundLogo.svg';
 import compoundIcon from '../images/comp-icn.svg';
+import daiIcon from '../images/MCDDai_32.png';
+import udscIcon from '../images/usdc-logo-2.png';
 
 // Import the contract abi's
 const abis = require('../contracts/compoundAbis');
@@ -60,44 +57,6 @@ console.log(`Address: ${randomWallet.address}`);
 // const biconomyWeb3 = new Web3(biconomy);
 
 
-// export const client = new ApolloClient({
-//     link: new HttpLink({
-//     uri: 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2'
-//     }),
-//     fetchOptions: {
-//     mode: 'no-cors'
-//     },
-//     cache: new InMemoryCache()
-// })
-
-// const DAI_QUERY = gql`
-// query tokens($tokenAddress: Bytes!) {
-//     tokens(where: { id: $tokenAddress }) {
-//     derivedETH
-//     totalLiquidity
-//     }
-// }
-// `
-
-// const ETH_PRICE_QUERY = gql`
-// query bundles {
-//     bundles(where: { id: "1" }) {
-//     ethPrice
-//     }
-// }
-// `
-
-// const chainId = ChainId.ROPSTEN;
-// const daiTokenAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
-
-// const init = async () => {
-//   const dai = await Fetcher.fetchTokenData(chainId, daiTokenAddress);
-//   const weth = WETH[chainId];
-//   const pair = await Fetcher.fetchPairData(dai, weth);
-
-//   const route = new Route([pair], weth);
-//   console.log(route.midPrice.toSignificant(6));
-// }
 
 console.log('Token Addresses Test ****', Compound.DAI, Compound.ETH, Compound.cETH);
 // DAI, ETH, cETH
@@ -127,7 +86,7 @@ const daiContract = new web3.eth.Contract(daiAbiJson, daiContractAddress);
 
 const compoundCDaiContractAddress = addresses.CDAI_ADDRESS_ROPSTEN;
 const compoundCDaiAbiJson = abis.CDAI_TOKEN_ABI;
-const compoundCDaiContract = new web3.eth.Contract(compoundCDaiAbiJson, compoundCDaiContractAddress);
+const compoundCDaiContract = new web3.eth.Contract(abis.CDAI_TOKEN_ABI, addresses.CDAI_ADDRESS_ROPSTEN);
 
 const usdcContractAddress = addresses.USDC_ADDRESS_ROPSTEN;
 const usdcAbiJson = abis.USDC_TOKEN_ABI;
@@ -155,14 +114,11 @@ const { Content, Footer, Sider } = Layout;
 const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, yourLocalBalance, price, tx, readContracts, writeContracts, kovanProvider, ropstenProvider }) => {
 
   const cethContract = useContract(ropstenProvider, contractAddress, cethAbiJson);
-  console.log('cethContract', cethContract)
-
   const compContract = useContract(ropstenProvider, compTokenAddress, compTokenAbi)
-  console.log('comp contract: ', compContract)
+  //const cUsdcContract = new web3.eth.Contract(abis.CUSDC_TOKEN_ABI, addresses.CUSDC_ADDRESS_ROPSTEN)
 
-  const cUsdcContract = useContract(ropstenProvider, addresses.CUSDC_ADDRESS_ROPSTEN, abis.CUSDC_TOKEN_ABI);
-
-
+  const cDaiContract = useContract(ropstenProvider, abis.CDAI_ADDRESS_ROPSTEN, addresses.CDAI_TOKEN_ABI)
+  const cUsdcContract = useContract(ropstenProvider, addresses.CUSDC_ADDRESS_ROPSTEN , abis.CUSDC_TOKEN_ABI)
   //const cethBalance = useTokenBalance(cethContract, contractAddress)
   //useBalance(ropstenProvider, '0xa0df350d2637096571F7A701CBc1C5fdE30dF76A');
   //useTokenBalance(cethContract, '0xa0df350d2637096571F7A701CBc1C5fdE30dF76A');
@@ -177,12 +133,17 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
   const [injectedProvider, setInjectedProvider] = useState();
 
   const [cethBalUser, setCethBalUser] = useState(0)
+  const [cDaiBalUser, setCdaiBalUser] = useState(0)
+  const [cUsdcBalUser, setCUsdcBalUser] = useState(0)
   const [compBal, setCompBal] = useState(0)
   const [cUsdcBal, setCUsdcBal] = useState(0)
   const [cDaiBal, setCDaiBal] = useState(0)
+  const [daiBal, setDaiBal] = useState(0)
+  const [usdcBal, setUsdcBal] = useState(0)
   const [ethDepositAmount, setEthDepositAmount] = useState(0)
-
-
+  const [daiDepositAmount, setDaiDepositAmount] = useState(0)
+  const [usdcDepositAmount, setUsdcDepositAmount] = useState(0)
+  
 
   userProvider = useUserProvider(injectedProvider, ropstenProvider);
   //const connectedWalletAddress = useUserAddress(userProvider);
@@ -207,28 +168,44 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
   // }, 60000, [cUsdContract]);
 
   usePoller(async () => {
-    if(compContract){
-      const compAccrued = await compContract.balanceOf('0xa0df350d2637096571F7A701CBc1C5fdE30dF76A')
+    if(compContract && address){
+      const compAccrued = await compContract.balanceOf(address)
       setCompBal(compAccrued.toString())
       console.log('###### COMP Balance #####  ', compBal)
     }
   }, 60000, [compContract])
 
   usePoller(async () => {
-    if(cethContract) {
-      const bal = await cethContract.balanceOf('0xa0df350d2637096571F7A701CBc1C5fdE30dF76A')//'0xa0df350d2637096571F7A701CBc1C5fdE30dF76A'
+    if(cethContract && address) {
+      const bal = await cethContract.balanceOf(address)//'0xa0df350d2637096571F7A701CBc1C5fdE30dF76A'
       setCethBalUser(bal.toNumber());
       console.log('^^^^^^^^^ cETH BAL ^^^^^^^^^^^^^', bal.toNumber());
     }
   }, 60000, [cethContract]);
 
-  (async function() {
-    const cDaiData = await Compound.api.cToken({
-      "addresses": Compound.util.getAddress(Compound.cDAI)
-    });
+  usePoller(async () => {
+    if(cDaiContract && address) {
+      const bal = await cDaiContract.balanceOf(address)//'0xa0df350d2637096571F7A701CBc1C5fdE30dF76A'
+      setCdaiBalUser(bal.toNumber());
+      console.log('^^^^^^^^^ cDAI BAL ^^^^^^^^^^^^^', bal.toNumber());
+    }
+  }, 60000, [cDaiContract]);
+
+  usePoller(async () => {
+    if(cUsdcContract && address) {
+      const bal = await cUsdcContract.balanceOf(address)//'0xa0df350d2637096571F7A701CBc1C5fdE30dF76A'
+      setCUsdcBalUser(bal.toNumber());
+      console.log('^^^^^^^^^ cUSDC BAL ^^^^^^^^^^^^^', bal.toNumber());
+    }
+  }, 60000, [cUsdcContract]);
+
+  // (async function() {
+  //   const cDaiData = await Compound.api.cToken({
+  //     "addresses": Compound.util.getAddress(Compound.cDAI)
+  //   });
   
-    console.log('^^^^^^^ cDaiData ^^^^^^^^^', cDaiData.cToken[0].symbol); // JavaScript Object
-  })().catch(console.error);
+  //   console.log('^^^^^^^ cDaiData ^^^^^^^^^', cDaiData.cToken[0].symbol); // JavaScript Object
+  // })().catch(console.error);
 
   // (async function() {
   //   const cUsdcMarketData = await Compound.api.marketHistory({
@@ -344,41 +321,41 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
     console.log("Current exchange rate from cETH to ETH:", exchangeRateCurrent);
   }
 
-  const depositDaiToCompound = async () => {
-    const supplyRatePerBlockMantissa = await compoundCDaiContract.methods.
-    supplyRatePerBlock().call();
+  const depositDaiToCompound = async (account, amount) => {
+      const supplyRatePerBlockMantissa = await compoundCDaiContract.methods.supplyRatePerBlock().call();
 
       const interestPerEthThisBlock = supplyRatePerBlockMantissa / 1e18;
       console.log(`Each supplied DAI will increase by ${interestPerEthThisBlock}` +
         ` this block, based on the current interest rate.`)
 
       // Tell DAI contract to allow 10 DAI to be taken by Compound's contract
-      await daiContract.methods.approve(
-        compoundCDaiContractAddress, web3.utils.toBN(10e18)
-      ).send({
-        from: connectedWalletAddress,
-        gasLimit: web3.utils.toHex(150000),     // posted at compound.finance/developers#gas-costs
-        gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
-      });
+      await daiContract.methods.approve(compoundCDaiContractAddress, web3.utils.toBN(10e18))
+        .send({
+          from: account,
+          gasLimit: web3.utils.toHex(150000),     // posted at compound.finance/developers#gas-costs
+          gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
+        });
 
       console.log('DAI contract "Approve" operation successful.');
       console.log('Sending DAI to the Compound Protocol...');
       // Mint cDAI by supplying DAI to the Compound Protocol
       const dai = 10e18; // 10 DAI
-      await compoundCDaiContract.methods.mint(web3.utils.toBN(dai)).send({
-        from: connectedWalletAddress,
-        gasLimit: web3.utils.toHex(600000),
-        gasPrice: web3.utils.toHex(20000000000),
-      });
+      await compoundCDaiContract.methods.mint(web3.utils.toBN(amount * 1e18))
+        .send({
+          from: account,
+          gasLimit: web3.utils.toHex(600000),
+          gasPrice: web3.utils.toHex(20000000000),
+        });
 
       console.log('cDAI "Mint" operation successful.');
+
       const _balanceOfUnderlying = await compoundCDaiContract.methods
-        .balanceOfUnderlying(connectedWalletAddress).call();
+        .balanceOfUnderlying(account).call();
       let balanceOfUnderlying = web3.utils.fromWei(_balanceOfUnderlying).toString();
       console.log("DAI supplied to the Compound Protocol:", balanceOfUnderlying);
 
       const _cTokenBalance = await compoundCDaiContract.methods.
-        balanceOf(connectedWalletAddress).call();
+        balanceOf(account).call();
       let cTokenBalance = (_cTokenBalance / 1e8).toString();
       console.log("My wallet's cDAI Token Balance:", cTokenBalance);
 
@@ -387,35 +364,139 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
       exchangeRateCurrent = (exchangeRateCurrent / 1e28).toString();
       console.log("Current exchange rate from cDAI to DAI:", exchangeRateCurrent);
 
-      console.log('Redeeming the cDAI for DAI...');
-
-      console.log('Exchanging all cDAI based on cToken amount...');
-      await compoundCDaiContract.methods.redeem(cTokenBalance * 1e8).send({
-        from: connectedWalletAddress,
-        gasLimit: web3.utils.toHex(500000),      // posted at compound.finance/developers#gas-costs
-        gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
-      });
-
-      // console.log('Exchanging all cDAI based on underlying DAI amount...');
-      // let daiAmount = web3.utils.toWei(balanceOfUnderlying).toString();
-      // await compoundCDaiContract.methods.redeemUnderlying(daiAmount).send({
-      //   from: connectedWalletAddress,
-      //   gasLimit: web3.utils.toHex(600000),      // posted at compound.finance/developers#gas-costs
-      //   gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
-      // });
-
-      cTokenBalance = await compoundCDaiContract.methods.balanceOf(connectedWalletAddress).call();
+      cTokenBalance = await compoundCDaiContract.methods.balanceOf(account).call();
       cTokenBalance = (cTokenBalance / 1e8).toString();
       console.log("My wallet's cDAI Token Balance:", cTokenBalance);
-
   }
 
-  const redeemCDaiFromCompound = () => {
+  const redeemCDaiFromCompound = async () => {
 
+    console.log('Redeeming the cDAI for DAI...');
+    const _cTokenBalance = await compoundCDaiContract.methods.
+        balanceOf(connectedWalletAddress).call();
+    let cTokenBalance = (_cTokenBalance / 1e8).toString();
+    console.log("My wallet's cDAI Token Balance:", cTokenBalance);
+
+    const _balanceOfUnderlying = await compoundCDaiContract.methods
+        .balanceOfUnderlying(connectedWalletAddress).call();
+    let balanceOfUnderlying = web3.utils.fromWei(_balanceOfUnderlying).toString();
+    console.log("DAI supplied to the Compound Protocol:", balanceOfUnderlying);
+
+    console.log('Exchanging all cDAI based on cToken amount...');
+    await compoundCDaiContract.methods.redeem(cTokenBalance * 1e8).send({
+      from: connectedWalletAddress,
+      gasLimit: web3.utils.toHex(500000),      // posted at compound.finance/developers#gas-costs
+      gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    });
+
+    console.log('Exchanging all cDAI based on underlying DAI amount...');
+    let daiAmount = web3.utils.toWei(balanceOfUnderlying).toString();
+    await compoundCDaiContract.methods.redeemUnderlying(daiAmount).send({
+      from: connectedWalletAddress,
+      gasLimit: web3.utils.toHex(600000),      // posted at compound.finance/developers#gas-costs
+      gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    });
   }
 
-  const withdrawUsdcFromCompound = () => {
+  const depositUsdcToCompound = async (account, amount) => {
+    const supplyRatePerBlockMantissa = await compoundCUsdcContract.methods.supplyRatePerBlock().call();
 
+    const interestPerEthThisBlock = supplyRatePerBlockMantissa / 1e8;
+    console.log(`Each supplied USDC will increase by ${interestPerEthThisBlock}` +
+      ` this block, based on the current interest rate.`)
+
+    // Tell DAI contract to allow 10 DAI to be taken by Compound's contract
+    await compoundCUsdcContract.methods.approve(compoundCDaiContractAddress, web3.utils.toBN(amount * 1e6))
+    .send({
+      from: account,
+      gasLimit: web3.utils.toHex(150000),     // posted at compound.finance/developers#gas-costs
+      gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
+    });
+
+    console.log('USDC contract "Approve" operation successful.');
+    console.log('Sending USDC to the Compound Protocol...');
+    // Mint cUSDC by supplying USDC to the Compound Protocol
+    await compoundCUsdcContract.methods.mint(web3.utils.toBN(amount * 1e6))
+      .send({
+        from: account,
+        gasLimit: web3.utils.toHex(600000),
+        gasPrice: web3.utils.toHex(20000000000),
+      });
+
+    console.log('cUSDC "Mint" operation successful.');
+
+    const _balanceOfUnderlying = await compoundCUsdcContract.methods
+    .balanceOfUnderlying(account).call();
+    let balanceOfUnderlying = web3.utils.fromWei(_balanceOfUnderlying).toString();
+    console.log("USDC supplied to the Compound Protocol:", balanceOfUnderlying);
+
+    const _cTokenBalance = await compoundCUsdcContract.methods.
+      balanceOf(account).call();
+    let cTokenBalance = (_cTokenBalance / 1e8).toString();
+    console.log("My wallet's cUSDC Token Balance:", cTokenBalance);
+
+    let exchangeRateCurrent = await compoundCUsdcContract.methods.
+      exchangeRateCurrent().call();
+    exchangeRateCurrent = (exchangeRateCurrent / 1e28).toString();
+    console.log("Current exchange rate from cUSDC to USDC:", exchangeRateCurrent);
+
+    // console.log('Redeeming the cUSDC for USDC...');
+
+    // console.log('Exchanging all cUSDC based on cToken amount...');
+    // await compoundCUsdcContract.methods.redeem(cTokenBalance * 1e8).send({
+    //   from: account,
+    //   gasLimit: web3.utils.toHex(500000),      // posted at compound.finance/developers#gas-costs
+    //   gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    // });
+
+    // console.log('Exchanging all cUSDC based on underlying USDC amount...');
+    // let daiAmount = web3.utils.toWei(balanceOfUnderlying).toString();
+    // await compoundCDaiContract.methods.redeemUnderlying(daiAmount).send({
+    //   from: connectedWalletAddress,
+    //   gasLimit: web3.utils.toHex(600000),      // posted at compound.finance/developers#gas-costs
+    //   gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    // });
+
+    cTokenBalance = await compoundCUsdcContract.methods.balanceOf(account).call();
+    cTokenBalance = (cTokenBalance / 1e8).toString();
+    console.log("My wallet's cUSDC Token Balance:", cTokenBalance);
+  }
+
+  const redeemCusdcFromCompound = async () => {
+    const _balanceOfUnderlying = await compoundCUsdcContract.methods
+      .balanceOfUnderlying(connectedWalletAddress).call();
+    let balanceOfUnderlying = web3.utils.fromWei(_balanceOfUnderlying).toString();
+    console.log("USDC supplied to the Compound Protocol:", balanceOfUnderlying);
+
+    const _cTokenBalance = await compoundCUsdcContract.methods
+      .balanceOf(connectedWalletAddress).call();
+    let cTokenBalance = (_cTokenBalance / 1e8).toString();
+    console.log("My wallet's cUSDC Token Balance:", cTokenBalance);
+
+    let exchangeRateCurrent = await compoundCUsdcContract.methods
+      .exchangeRateCurrent().call();
+    exchangeRateCurrent = (exchangeRateCurrent / 1e28).toString();
+    console.log("Current exchange rate from cUSDC to USDC:", exchangeRateCurrent);
+    console.log('Redeeming the cUSDC for USDC...');
+
+    console.log('Exchanging all cUSDC based on cToken amount...');
+    await compoundCUsdcContract.methods.redeem(cTokenBalance * 1e8).send({
+      from: connectedWalletAddress,
+      gasLimit: web3.utils.toHex(500000),      // posted at compound.finance/developers#gas-costs
+      gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    });
+
+    console.log('Exchanging all cUSDC based on underlying USDC amount...');
+    let daiAmount = web3.utils.toWei(balanceOfUnderlying).toString();
+    await compoundCUsdcContract.methods.redeemUnderlying(daiAmount).send({
+      from: connectedWalletAddress,
+      gasLimit: web3.utils.toHex(600000),      // posted at compound.finance/developers#gas-costs
+      gasPrice: web3.utils.toHex(20000000000), // use ethgasstation.info (mainnet only)
+    });
+
+    cTokenBalance = await compoundCUsdcContract.methods.balanceOf(connectedWalletAddress).call();
+    cTokenBalance = (cTokenBalance / 1e8).toString();
+    console.log("My wallet's cUSDC Token Balance:", cTokenBalance);
   }
 
   const claimCompTokens = () => {
@@ -423,9 +504,9 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
 
   }
 
-  const borrowDai = async () => {
+  const borrowDai = async (amount) => {
       //await compound.borrow(Compound.DAI, 1, { mantissa: true })
-      const daiScaledUp = '1000000000000000000';
+      const daiScaledUp = amount * 1e18;
       const trxOptions = { mantissa: true, privateKey: '0xb8c1b5c1d81f9475fdf2e334517d29f733bdfa40682207571b12fc1142cbf329' };
 
       console.log('Borrowing 32 Dai...');
@@ -438,28 +519,20 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
   const usdcAddress = Compound.util.getAddress(Compound.USDC);
   const uniswapUsdcEth = '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc';
 
-  // (async function() {
+  (async function() {
 
-  //   const bal = await Compound.eth.read(
-  //     usdcAddress,
-  //     'function balanceOf(address) returns (uint256)',
-  //     [ uniswapUsdcEth ], // [optional] parameters
-  //     {}  // [optional] call options, provider, network, plus ethers "overrides"
-  //   );
+    const bal = await Compound.eth.read(
+      usdcAddress,
+      'function balanceOf(address) returns (uint256)',
+      [ uniswapUsdcEth ], // [optional] parameters
+      {}  // [optional] call options, provider, network, plus ethers "overrides"
+    );
 
-  //   console.log('USDC Balance of Uniswap ETH-USDC', bal.toString());
+    console.log('USDC Balance of Uniswap ETH-USDC', (bal / 1e6).toString());
 
-  // })().catch(console.error);
+  })().catch(console.error);
 
 
-
-  const depositToCompound2 = async (amount) => {
-
-      console.log('Supplying ETH to the Compound protocol...');
-      const trx = await compound.supply(Compound.ETH, amount);
-
-  }
-    
 
   // const { loading: ethLoading, data: ethPriceData } = useQuery(ETH_PRICE_QUERY)
   // const { loading: daiLoading, data: daiData } = useQuery(DAI_QUERY, {
@@ -485,9 +558,9 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
                 <TokenBalance name={"RawCipherLPToken"} img={"🛠RCT LP"} address={address} contracts={readContracts} /> */}
                 <h3>
                 <Image src={compoundLogo} />&nbsp;&nbsp;
-                <span>cDAI {0}</span>&nbsp;&nbsp;
-                <span>cETH {cethBalUser}</span>&nbsp;&nbsp;
-                <span>cUSDC {0}</span>&nbsp;&nbsp;
+                <span>cDAI {(cDaiBalUser / 1e18).toString()}</span>&nbsp;&nbsp;
+                <span>cETH {(cethBalUser / 1e8).toString()}</span>&nbsp;&nbsp;
+                <span>cUSDC {(cUsdcBalUser / 1e8).toString()}</span>&nbsp;&nbsp;
                 <span>COMP {web3.utils.fromWei(compBal.toString())}</span>
                 </h3>
 
@@ -524,25 +597,42 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
                 </Col>
                 <Col span={8} >
                     <label>Deposit DAI</label><br />
-                    <Input id='daiDepositAmount' prefix="D" suffix="DAI" style={{ width: 200 }} />
+                    <Input 
+                      id='daiDepositAmount' 
+                      prefix={<Image src={daiIcon} />} 
+                      suffix="DAI" 
+                      style={{ width: 200 }}
+                      onChange={ event => setDaiDepositAmount(event.target.value) } />
                     <br /><br />
                       <Button
                         onClick={() => {
-                            depositDaiToCompound()
+                          // Modal here ...
+
+                            depositDaiToCompound(connectedWalletAddress, daiDepositAmount)
                               .catch((err) => {
                                 console.error(err);
                             });
                         }}>
-                      <UploadOutlined /> Deposit DAI
+                      <UploadOutlined /> Deposit DAI 
                       </Button>
                 </Col>
                 <Col span={8} >
                 <label>Deposit USDC</label><br />
-                    <Input id='rctDepositAmount' prefix="U" suffix="USDC" style={{ width: 200 }} />
+                    <Input 
+                      id='usdcDepositAmount' 
+                      prefix='$' 
+                      suffix="USDC" 
+                      style={{ width: 200 }} 
+                      onChange={ event => setUsdcDepositAmount(event.target.value) }
+                    />
                     <br /><br />
                     <Button
                       onClick={() => {
-
+                        depositUsdcToCompound(connectedWalletAddress, usdcDepositAmount)
+                          .catch((err) => {
+                            console.error(err)
+                          })
+                        console.log(usdcDepositAmount)
                       }}>
                     <UploadOutlined /> Deposit USDC
                     </Button>
@@ -557,7 +647,7 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
                             console.error('ERROR::WITHDRAWFROMCOMPOUND::  ', err)
                         })
                     }}>
-                    Withdraw & Claim COMP
+                    Withdraw & Claim COMP &nbsp; <Image src={compoundIcon} />
                     </Button>
                 </Col>
                 <Col span={8} >
@@ -568,18 +658,18 @@ const CompoundUI = ({address, mainnetProvider, userProvider, localProvider, your
                             console.error('ERROR::WITHDRAWFROMCOMPOUND::  ', err)
                         })
                     }}>
-                    Withdraw & Claim COMP
+                    Withdraw & Claim COMP &nbsp; <Image src={compoundIcon} />
                     </Button>
                 </Col>
                 <Col span={8} >
                 <Button
                     onClick={() => {
-                      withdrawUsdcFromCompound()
-                      .catch((err) => {
+                      redeemCusdcFromCompound()
+                        .catch((err) => {
                           console.error('ERROR::WITHDRAWFROMCOMPOUND::  ', err)
                       })
                     }}>
-                     Withdraw & Claim COMP
+                     Withdraw & Claim COMP &nbsp; <Image src={compoundIcon} />
                     </Button>
                 </Col>
                 </Row>
