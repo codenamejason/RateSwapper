@@ -16,10 +16,6 @@ import { parseEther, formatEther } from "@ethersproject/units";
 import { Hints, ExampleUI, RateSwapUI, CompoundUI, AaveUI } from "./views"
 import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from './constants'
 import Web3 from 'web3';
-// import Biconomy from "@biconomy/mexa";
-
-
-
 //import Portis from '@portis/web3';
 // 
 // const portis = new Portis('43b018f6-e3f1-4d5e-a85b-021280e28777', 'mainnet');
@@ -40,6 +36,7 @@ const blockExplorer = "https://etherscan.io/" // for xdai: "https://blockscout.c
 // 🛰 providers
 console.log("📡 Connecting to Mainnet Ethereum");
 const mainnetProvider = getDefaultProvider("mainnet", { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 });
+const mainnetForkProvider = 'https://localhost:8545';
 const kovanProvider = getDefaultProvider("kovan", { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 });
 const rinkebyProvider = getDefaultProvider('rinkeby', { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 })
 const ropstenProvider = getDefaultProvider('ropsten', { infura: INFURA_ID, etherscan: ETHERSCAN_KEY, quorum: 1 })
@@ -48,46 +45,11 @@ const ropstenProvider = getDefaultProvider('ropsten', { infura: INFURA_ID, ether
 // ( ⚠️ Getting "failed to meet quorum" errors? Check your INFURA_ID)
 
 // 🏠 Your local provider is usually pointed at your local blockchain
-const localProviderUrl = "http://localhost:999"; // "https://ropsten.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
+const localProviderUrl = "http://localhost:8545"; // "https://ropsten.infura.io/v3/5c19088a9f804202b4fe954c029de555";//for xdai: https://dai.poa.network
 // as you deploy to other networks you can set REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 console.log("🏠 Connecting to provider:", localProviderUrlFromEnv);
 const localProvider = new JsonRpcProvider(localProviderUrlFromEnv);
-
-// Biconomy Initialization
-// let options = {
-//   apiKey: '_a1vIlfCz.49a8bba2-29e8-471e-afea-bcfaf8aeeea5',
-//   strictMode: true
-// };
-
-// const biconomy = new Biconomy(window.ethereum, options);
-// const biconomyWeb3 = new Web3(biconomy);
-
-// biconomy.onEvent(biconomy.READY, () => {
-//   // Initialize your dapp here
-//   console.log('**** Dapp initialized on Biconomy ****')
-
-
-//  }).onEvent(biconomy.ERROR, (error, message) => {
-//   // Handle error while initializing mexa
-//   console.error('**** Error ****', error)
-// });
-
-// biconomy.login('0xa0df350d2637096571F7A701CBc1C5fdE30dF76A', (error, response) => {
-//   if(error) {
-//   // Error while user login to biconomy
-//     console.error(error);
-//   return;
-//   }
- 
-//   if(response.transactionHash) {
-//   // First time user. Contract wallet transaction pending. Wait for confirmation.
-//     console.log('first time user', response.transactionHash);
-//   } else if(response.userContract) {
-//   // Existing user login successful
-//     console.log('existing user', response.userContract)
-//   }
-// });
 
 const App = () => {
   const [injectedProvider, setInjectedProvider] = useState();
@@ -100,23 +62,18 @@ const App = () => {
   const userProvider = useUserProvider(injectedProvider, ropstenProvider);
   const address = useUserAddress(userProvider);
   console.log('User Wallet Address: ', address)
-
   // The transactor wraps transactions and provides notificiations
   const tx = Transactor(userProvider, gasPrice)
-
   // 🏗 scaffold-eth is full of handy hooks like this one to get your balance:
   const yourLocalBalance = useBalance(ropstenProvider, address);
-  console.log("💵 yourLocalBalance", yourLocalBalance ? formatEther(yourLocalBalance) : "...")
-
+  //console.log("💵 yourLocalBalance", yourLocalBalance ? formatEther(yourLocalBalance) : "...")
   // just plug in different 🛰 providers to get your balance on different chains:
-  const yourMainnetBalance = useBalance(mainnetProvider, address);
-  console.log("💵 yourMainnetBalance", yourMainnetBalance ? formatEther(yourMainnetBalance) : "...")
-  
+  //const yourMainnetBalance = useBalance(mainnetProvider, address);
+  //console.log("💵 yourMainnetBalance", yourMainnetBalance ? formatEther(yourMainnetBalance) : "...")  
   // Mainnet DAI contract to fetch balance
   const daiContract = useContract(mainnetProvider, addresses.DAI_ADDRESS_MAINNET, abis.DAI_TOKEN_ABI_MAINNET); 
-  console.log('📝 DAI Contract Mainnet: ', daiContract);
+  //console.log('📝 DAI Contract Mainnet: ', daiContract);
   const [daiBalance, setDaiBalance] = useState(0);
-
   // Using the Poller hook to update our DAI balance
   // You can update the polling time by changing the 60000 (60 seconds).
   // usePoller(async () => {
@@ -125,24 +82,13 @@ const App = () => {
   //       setDaiBalance(daiBal);
   //   }
   // }, 500000, [daiContract]);
-
-  // (async function() {
-  //   if(daiContract && address){
-  //     const daiBal = await daiContract.balanceOf(address)
-  //     setDaiBalance(daiBal);
-  //   }
-  // })().catch(console.error);
-
   console.log('💵 Your Mainnet DAI Balance: ', daiBalance ? formatEther(daiBalance) : '...');
-
   // Load in your local 📝 contract and read a value from it:
   const readContracts = useContractLoader(ropstenProvider)
-  console.log("📝 readContracts", readContracts)
-
+  //console.log("📝 readContracts", readContracts)
   // If you want to make 🔐 write transactions to your contracts, use the userProvider:
   const writeContracts = useContractLoader(userProvider)
-  console.log("🔐 writeContracts", writeContracts)
-
+  //console.log("🔐 writeContracts", writeContracts)
 
   const loadWeb3Modal = useCallback(async () => {
     const provider = await web3Modal.connect();
@@ -155,10 +101,8 @@ const App = () => {
     }
   }, [loadWeb3Modal]);
 
-  console.log("Location:: ", window.location.pathname)
-
+  //console.log("Location:: ", window.location.pathname)
   const [route, setRoute] = useState();
-
   useEffect(() => {
     console.log("SETTING ROUTE:: ", window.location.pathname)
     setRoute(window.location.pathname)
@@ -185,6 +129,9 @@ const App = () => {
           {/* <Menu.Item key='/rateswap'>
             <Link onClick={ () => { setRoute('/rateswap') } } to='/rateswap'>Rate Swap</Link>
           </Menu.Item> */}
+          <Menu.Item>
+            <Link onClick={ () => { setRoute('/farm') } } to='/farm'>Farm</Link>
+          </Menu.Item>
           <Menu.Item>
             <Link onClick={ () => { setRoute('/compound') } } to='/compound'>Compound</Link>
           </Menu.Item>
@@ -224,6 +171,9 @@ const App = () => {
               address={address}
               blockExplorer={blockExplorer}
             />
+          </Route>
+          <Route path='/farm'>
+
           </Route>
           {/* <Route path="/hints">
             <Hints
@@ -289,6 +239,7 @@ const App = () => {
               readContracts={readContracts}
               kovanProvider={kovanProvider}
               ropstenProvider={ropstenProvider}
+              mainnetForkProvider={mainnetForkProvider}
             />
           </Route>
           <Route path='/uniswap'>

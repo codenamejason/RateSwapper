@@ -12,3 +12,5 @@ export const BASE_URI = "";
 export const BASE_OPTIONS = {
 
 }
+
+export const TEST_MNEMONIC = 'camera guitar chronic must hawk old margin nephew stove bag child afford';

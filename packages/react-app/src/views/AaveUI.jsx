@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import "antd/dist/antd.css";
 import { Button, List, Divider, Input, Image, Card, DatePicker, Slider, Switch, Progress, Spin, Row, Col, Layout, Menu } from "antd";
-import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import { useUserAddress, useTokenBalance } from "eth-hooks";
@@ -10,11 +9,14 @@ import { TokenBalance, Balance, Account, Faucet, Ramp, Contract, GasGauge, Addre
 import { Transactor } from "./../helpers";
 import { parseEther, formatEther } from "@ethersproject/units";
 import { EtherscanProvider } from "@ethersproject/providers";
+import Web3Modal from "web3modal";
 import Biconomy from "@biconomy/mexa";
 import { legos } from "@studydefi/money-legos";
 import aaveLogo from '../images/aave.svg';
 import aaveLittleBox from '../images/aave-little-box.png';
 import daiIcon from '../images/MCDDai_32.png';
+import { getDefaultProvider, InfuraProvider, JsonRpcProvider, Web3Provider } from "@ethersproject/providers";
+import { INFURA_ID, ETHERSCAN_KEY, CORS_PROXY_URI, BASE_OPTIONS, BASE_URI } from '../constants'
 
 const ethers = require("ethers");
 
@@ -46,10 +48,14 @@ const myWalletAddress = web3.eth.accounts.wallet[0].address;
 console.log('Connected Walelt', myWalletAddress)
 
 
+
+
 const { Content, Footer, Sider } = Layout;
 
-const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLocalBalance, price, tx, readContracts, writeContracts, kovanProvider }) => {
+const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLocalBalance, price, tx, readContracts, writeContracts, kovanProvider, ropstenProvider, mainnetForkProvider }) => {
     // state variables
+    const [injectedProvider, setInjectedProvider] = useState();
+
     const [aDaiBalUser, setADaiBalUser] = useState(0)
     const [aEthBalUser, setAEthBalUser] = useState(0)
     const [aUsdcBalUser, setAUsdcBalUser] = useState(0)
@@ -63,7 +69,18 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
     const useAsCollateral = true
     
     
+    userProvider = useUserProvider(injectedProvider, ropstenProvider);
 
+    const loadWeb3Modal = useCallback(async () => {
+        const provider = await Web3Modal.connect();
+        setInjectedProvider(new Web3Provider(provider));
+      }, [setInjectedProvider]);
+    
+    useEffect(() => {
+        if (Web3Modal.cachedProvider) {
+          loadWeb3Modal();
+        }
+      }, [loadWeb3Modal]);
 
     // AAVE Functions against contracts
     const depositEth = async (account, amount) => {
@@ -73,7 +90,7 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
 
     const depositDai = async (account, amount) => {
         const daiAmountInWei = web3.utils.toWei(amount, 'ether').toString();
-        const daiTokenAddress = addresses.DAI_ADDRESS_ROPSTEN;
+        const daiTokenAddress = addresses.DAI_ADDRESS_ROPSTEN_AAVE;
         const referralCode = '0';
         const userAddress = account;
 
@@ -122,29 +139,28 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
         // Set user reserve as collateral
         await lpContract.methods
             .setUserUseReserveAsCollateral(
-                addresses.DAI_ADDRESS_ROPSTEN,
+                addresses.DAI_ADDRESS_ROPSTEN_AAVE,
                 useAsCollateral
             )
             .send({
                 from: account,
-                gasLimit: web3.utils.toHex(150000),     // posted at compound.finance/developers#gas-costs
-                gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
+                gasLimit: web3.utils.toHex(400000),     // posted at compound.finance/developers#gas-costs
+                gasPrice: web3.utils.toHex(90000000000) // use ethgasstation.info (mainnet only)
               })
             .catch((e) => {
                 throw Error(`Error setting user reserve as collateral in the LendingPool contract: ${e.message}`)
         });
-
-
+        console.log(`Executing deposit`)
         await lpContract.methods
             .deposit(
-                addresses.DAI_ADDRESS_ROPSTEN,
+                addresses.DAI_ADDRESS_ROPSTEN_AAVE,
                 daiAmountInWei,
                 referralCode
             )
             .send({
                 from: account,
-                gasLimit: web3.utils.toHex(150000),     // posted at compound.finance/developers#gas-costs
-                gasPrice: web3.utils.toHex(20000000000) // use ethgasstation.info (mainnet only)
+                gasLimit: web3.utils.toHex(400000),     // posted at compound.finance/developers#gas-costs
+                gasPrice: web3.utils.toHex(90000000000) // use ethgasstation.info (mainnet only)
               })
             .catch((e) => {
                 throw Error(`Error depositing to the LendingPool contract: ${e.message}`)
@@ -153,7 +169,7 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
 
     const depositUSDC = async (account, amount) => {
         const usdcAmountInWei = (amount / 1e6).toString();
-        const usdcTokenAddress = addresses.USDC_ADDRESS_ROPSTEN;
+        const usdcTokenAddress = addresses.USDC_ADDRESS_ROPSTEN_AAVE;
         const referralCode = '0';
         const userAddress = account;
 
@@ -202,7 +218,7 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
         // Set user reserve as collateral
         await lpContract.methods
             .setUserUseReserveAsCollateral(
-                addresses.USDC_ADDRESS_ROPSTEN,
+                addresses.USDC_ADDRESS_ROPSTEN_AAVE,
                 useAsCollateral
             )
             .send({
@@ -217,7 +233,7 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
 
         await lpContract.methods
             .deposit(
-                addresses.USDC_ADDRESS_ROPSTEN,
+                addresses.USDC_ADDRESS_ROPSTEN_AAVE,
                 amount,
                 referralCode
             )
@@ -234,6 +250,22 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
     const depositUSDT = async (account, amount) => {
 
     }
+
+    const borrowEth = async () => {
+
+    }
+
+    const borrowDai = async () => {
+        const daiAddress = addresses.DAI_ADDRESS_ROPSTEN;
+
+
+    }
+
+    const borrowUsdc = async () => {
+        
+    }
+
+    
 
 
 
@@ -337,6 +369,36 @@ const AaveUI = ({ address, mainnetProvider, userProvider, localProvider, yourLoc
                   
                     }}>
                      Redeem aTokens &nbsp; <Image src={aaveLittleBox} height='20px' width='20px' />
+                    </Button>
+                </Col>
+                </Row>
+                <Divider />
+                 <Row gutter={[16, 16]}>
+                <Col span={8} >
+                <Button
+                    onClick={() => {
+                     borrowEth()
+                        .catch((err) => console.error(err))
+                    }}>
+                    Borrow ETH
+                    </Button>
+                </Col>
+                <Col span={8} >
+                <Button
+                    onClick={() => {
+                     borrowDai()
+                        .catch((err) => console.error(err))
+                    }}>
+                    Borrow DAI
+                    </Button>
+                </Col>
+                <Col span={8} >
+                <Button
+                    onClick={() => {
+                        borrowUsdc()
+                            .catch((err) => console.error(err))
+                    }}>
+                     Borrow USDC
                     </Button>
                 </Col>
                 </Row>
